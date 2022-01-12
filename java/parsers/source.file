@@ -1,0 +1,10 @@
+int f(int x, int y) {
+
+    int z = x + (y * 2)^2;
+    bool condition = true;
+    return z;
+}
+
+int main() {
+    print(f(3,4));
+}

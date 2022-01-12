@@ -1,0 +1,84 @@
+package parsers.cup;
+import parsers.ast.*;
+import java.util.ArrayList;
+class ExpressionParser;
+
+terminal Integer NUMBER;
+terminal Boolean BOOLEAN;
+terminal String IDENTIFIER;
+terminal PLUS, STAR, POW, LPAREN, RPAREN, INT, BOOL, LBRACE, RBRACE, COMMA, SEMI, EQ, RETURN, IF, ELSE;
+
+nonterminal CompUnit CompUnit;
+nonterminal FunctionDeclaration FuncDecl;
+nonterminal Type Type;
+
+nonterminal Arg Arg;
+nonterminal ArrayList<Arg> ArgList, NonemptyArgList;
+
+nonterminal Expression Exp;
+nonterminal ArrayList<Expression> ParamList, NonemptyParamList;
+nonterminal FunctionCall FunctionCall;
+nonterminal Statement Statement;
+nonterminal ArrayList<Statement> Statements;
+
+
+//precedencia
+precedence left PLUS;
+precedence left STAR;
+precedence right POW;
+
+CompUnit ::= FuncDecl:value {: RESULT = new CompUnit(); RESULT.functions.add(value); :} |
+             CompUnit:functions FuncDecl:function {:
+                functions.functions.add(function);
+                RESULT = functions;
+             :}
+             ;
+
+FuncDecl ::= Type:type IDENTIFIER:name LPAREN ArgList:argList RPAREN LBRACE Statements:statements RBRACE
+            {: RESULT = new FunctionDeclaration(type, name, argList, statements); :}
+            ;
+
+Type ::= INT {: RESULT = Type.INT; :} | BOOL {: RESULT = Type.BOOL; :};
+
+ArgList ::= {: RESULT = new ArrayList<>(); :}|
+           NonemptyArgList:value {: RESULT = value; :}
+           ;
+NonemptyArgList ::= Arg:arg {: RESULT = new ArrayList<>(); RESULT.add(arg); :}|
+                    Arg:arg COMMA NonemptyArgList:list {: list.add(0,arg); RESULT = list; :}
+                    ;
+Arg ::= Type:type IDENTIFIER:name {: RESULT = new Arg(type, name); :} ;
+
+
+Statements ::= {: RESULT = new ArrayList<>(); :} |
+                Statement:statement SEMI Statements:statements {: statements.add(0,statement); RESULT = statements; :}
+                ;
+
+Statement ::= Type:type IDENTIFIER:name EQ Exp:exp {: RESULT = new VariableDeclaration(type, name, exp); :} |
+              IDENTIFIER:name EQ Exp:exp {: RESULT = new Assignment(name,exp); :} |
+              RETURN Exp:exp {: RESULT = new ReturnStatement(exp); :} |
+              IF LPAREN Exp:condition RPAREN LBRACE Statement:positive RBRACE ELSE LBRACE Statement:negative RBRACE
+              {: RESULT = new IfElseStatement(condition, positive, negative); :} |
+              Exp:exp {: RESULT = exp; :}
+              ;
+
+Exp ::= LPAREN Exp:value RPAREN {: RESULT = value; :}|
+        Exp:value1 PLUS Exp:value2 {: RESULT = new BinaryExpression(value1, BinaryExpression.Operator.PLUS, value2); :} |
+        Exp:value1 STAR Exp:value2 {: RESULT = new BinaryExpression(value1, BinaryExpression.Operator.STAR, value2); :} |
+        Exp:value1 POW Exp:value2 {: RESULT = new BinaryExpression(value1, BinaryExpression.Operator.POW, value2); :} |
+        NUMBER:value {: RESULT = new NumberExpression(value); :} |
+        BOOLEAN:value {: RESULT = new BooleanExpression(value); :} |
+        IDENTIFIER:name {: RESULT = new VariableExpression(name); :} |
+        FunctionCall:value {: RESULT = value; :} |
+        Exp:v1 PLUS error {: RESULT = v1; System.err.println("Hibás karakter a bemeneti fájlban, '+' karaktert követően!");:} |
+        Exp:v1 STAR error {: RESULT = v1; System.err.println("Hibás karakter a bemeneti fájlban, '*' karaktert követően!");:} |
+        LPAREN error RPAREN {:  RESULT = new NumberExpression(0); System.err.println("Hibás karakter a bemeneti fájlban, '(...)' karakterek között!");:}
+        ;
+
+FunctionCall ::= IDENTIFIER:name LPAREN ParamList:paramList RPAREN {: RESULT = new FunctionCall(name, paramList); :};
+
+ParamList ::= {: RESULT = new ArrayList<>(); :}|
+               NonemptyParamList:paramList {: RESULT = paramList; :};
+
+NonemptyParamList ::= Exp:expression {: RESULT = new ArrayList<>(); RESULT.add(expression); :} |
+                      Exp:expression COMMA NonemptyParamList:paramList {: RESULT = paramList; RESULT.add(0,expression); :}
+                      ;
