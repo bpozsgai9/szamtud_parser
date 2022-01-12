@@ -3,6 +3,7 @@ egy nagyon basic cpp parser kezdemény, mert ugye amúgy is olyan kevés dolgom 
 
 ezt trya megvalósítani, csak az if nem akar úgy lenni ahogy az megvagyon írva
 
+```
 int f(int x, int y) {
 
     int z = x + (y * 2)^2;
@@ -13,3 +14,4 @@ int f(int x, int y) {
 int main() {
     print(f(3,4));
 }
+```
